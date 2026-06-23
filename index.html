@@ -447,35 +447,80 @@ html, body {
 }
 
 /* ── Notes Panel ─────────────────────────────────────────────────────────── */
-#notes-toolbar {
+#notes-tabbar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  background: var(--surface);
+  height: 38px;
+  background: var(--surface2);
   border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+#notes-tabbar::-webkit-scrollbar { display: none; }
+
+.note-tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  padding: 0 10px;
+  border-right: 1px solid var(--border);
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 140px;
+  transition: background 0.12s, color 0.12s;
+}
+.note-tab:hover { background: var(--surface); color: var(--text); }
+.note-tab.active { color: var(--text); background: var(--bg); border-bottom: 2px solid #a78bfa; }
+
+.note-tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  outline: none;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  max-width: 100px;
+  padding: 0;
+}
+.note-tab-name:focus {
+  cursor: text;
+  border-bottom: 1px solid #a78bfa;
+  color: var(--text);
+}
+
+.note-tab-del {
+  opacity: 0;
+  font-size: 14px;
+  padding: 1px 3px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  transition: opacity 0.12s;
+}
+.note-tab:hover .note-tab-del,
+.note-tab.active .note-tab-del { opacity: 0.5; }
+.note-tab-del:hover { opacity: 1 !important; background: rgba(255,255,255,0.1); }
+
+#notes-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 100%;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
   flex-shrink: 0;
 }
-
-#notes-toolbar-title {
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  color: var(--muted);
-  letter-spacing: 0.04em;
-}
-
-#notes-clear-btn {
-  margin-left: auto;
-  padding: 4px 12px;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--muted);
-  font-size: 12px;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-}
-#notes-clear-btn:hover { border-color: var(--red); color: var(--red); }
+#notes-add-btn:hover { color: var(--text); }
 
 #notes-textarea {
   flex: 1;
@@ -873,11 +918,10 @@ html, body {
 
     <!-- Notes Panel -->
     <div class="doc-panel" id="notes-panel">
-      <div id="notes-toolbar">
-        <span id="notes-toolbar-title">— scratchpad —</span>
-        <button id="notes-clear-btn" onclick="clearNotes()">Clear</button>
+      <div id="notes-tabbar">
+        <div id="notes-add-btn" onclick="addNote()" title="New note">+</div>
       </div>
-      <textarea id="notes-textarea" placeholder="Write anything… reminders, thoughts, quick notes. Saves automatically."></textarea>
+      <textarea id="notes-textarea" placeholder="Start typing… saves automatically."></textarea>
     </div>
 
   </div>
@@ -1081,8 +1125,8 @@ async function handleFile(file) {
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 function renderTabs() {
   const bar = document.getElementById('tabbar');
-  // Remove existing tabs (keep add btn)
-  bar.querySelectorAll('.tab').forEach(t => t.remove());
+  // Remove only document tabs, keep notes tab and add btn
+  bar.querySelectorAll('.tab:not(#notes-tab)').forEach(t => t.remove());
   const addBtn = document.getElementById('add-tab-btn');
 
   tabs.forEach(tab => {
@@ -1162,11 +1206,168 @@ function setTypeStrip(type) {
 }
 
 // ── Notes ─────────────────────────────────────────────────────────────────────
-const NOTES_KEY = 'docviewer_notes';
+const NOTES_KEY = 'docviewer_notes_v2';
+let notesState = null; // { activeId, notes: [{ id, name, content }] }
+
+function loadNotesState() {
+  try {
+    const raw = localStorage.getItem(NOTES_KEY);
+    if (raw) {
+      notesState = JSON.parse(raw);
+      // Ensure at least one note exists
+      if (!notesState.notes || !notesState.notes.length) {
+        notesState.notes = [makeNote(1)];
+        notesState.activeId = notesState.notes[0].id;
+      }
+    } else {
+      const first = makeNote(1);
+      notesState = { activeId: first.id, notes: [first] };
+    }
+  } catch(e) {
+    const first = makeNote(1);
+    notesState = { activeId: first.id, notes: [first] };
+  }
+}
+
+function saveNotesState() {
+  localStorage.setItem(NOTES_KEY, JSON.stringify(notesState));
+}
+
+function makeNote(num) {
+  return { id: Date.now().toString() + Math.random(), name: `note-${num}`, content: '' };
+}
+
+function getNextNoteNum() {
+  const nums = notesState.notes
+    .map(n => { const m = n.name.match(/^note-(\d+)$/); return m ? parseInt(m[1]) : 0; })
+    .filter(n => n > 0);
+  return nums.length ? Math.max(...nums) + 1 : notesState.notes.length + 1;
+}
+
+function renderNoteTabs() {
+  const bar = document.getElementById('notes-tabbar');
+  const addBtn = document.getElementById('notes-add-btn');
+  // Remove existing note tabs
+  bar.querySelectorAll('.note-tab').forEach(t => t.remove());
+
+  notesState.notes.forEach(note => {
+    const el = document.createElement('div');
+    el.className = 'note-tab' + (note.id === notesState.activeId ? ' active' : '');
+    el.dataset.id = note.id;
+
+    // Editable name span
+    const nameEl = document.createElement('span');
+    nameEl.className = 'note-tab-name';
+    nameEl.textContent = note.name;
+    nameEl.title = 'Tap to select · hold to rename';
+
+    // Single tap = activate, double tap = rename
+    nameEl.addEventListener('click', e => {
+      if (note.id !== notesState.activeId) {
+        switchNote(note.id);
+      }
+    });
+    nameEl.addEventListener('dblclick', e => {
+      e.stopPropagation();
+      startRename(note.id, nameEl);
+    });
+
+    // Delete btn
+    const delEl = document.createElement('span');
+    delEl.className = 'note-tab-del';
+    delEl.textContent = '×';
+    delEl.title = 'Delete note';
+    delEl.addEventListener('click', e => {
+      e.stopPropagation();
+      deleteNote(note.id);
+    });
+
+    el.appendChild(nameEl);
+    el.appendChild(delEl);
+    bar.insertBefore(el, addBtn);
+  });
+}
+
+function startRename(id, nameEl) {
+  const note = notesState.notes.find(n => n.id === id);
+  if (!note) return;
+  nameEl.contentEditable = 'true';
+  nameEl.focus();
+  // Select all text
+  const range = document.createRange();
+  range.selectNodeContents(nameEl);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(range);
+
+  function finish() {
+    nameEl.contentEditable = 'false';
+    const newName = nameEl.textContent.trim() || note.name;
+    nameEl.textContent = newName;
+    note.name = newName;
+    saveNotesState();
+  }
+  nameEl.addEventListener('blur', finish, { once: true });
+  nameEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); }
+    if (e.key === 'Escape') { nameEl.textContent = note.name; nameEl.blur(); }
+  });
+}
+
+function switchNote(id) {
+  // Save current textarea content first
+  const activeNote = notesState.notes.find(n => n.id === notesState.activeId);
+  if (activeNote) {
+    activeNote.content = document.getElementById('notes-textarea').value;
+  }
+  notesState.activeId = id;
+  saveNotesState();
+  renderNoteTabs();
+  const note = notesState.notes.find(n => n.id === id);
+  const ta = document.getElementById('notes-textarea');
+  ta.value = note ? note.content : '';
+  ta.focus();
+}
+
+function addNote() {
+  // Save current content first
+  const activeNote = notesState.notes.find(n => n.id === notesState.activeId);
+  if (activeNote) activeNote.content = document.getElementById('notes-textarea').value;
+
+  const newNote = makeNote(getNextNoteNum());
+  notesState.notes.push(newNote);
+  notesState.activeId = newNote.id;
+  saveNotesState();
+  renderNoteTabs();
+  const ta = document.getElementById('notes-textarea');
+  ta.value = '';
+  ta.focus();
+  showToast('New note created');
+}
+
+function deleteNote(id) {
+  if (notesState.notes.length === 1) {
+    // Last note — clear content but keep it
+    notesState.notes[0].content = '';
+    document.getElementById('notes-textarea').value = '';
+    saveNotesState();
+    showToast('Note cleared');
+    return;
+  }
+  const idx = notesState.notes.findIndex(n => n.id === id);
+  notesState.notes.splice(idx, 1);
+  // If we deleted the active one, activate adjacent
+  if (notesState.activeId === id) {
+    notesState.activeId = notesState.notes[Math.min(idx, notesState.notes.length - 1)].id;
+  }
+  saveNotesState();
+  renderNoteTabs();
+  const note = notesState.notes.find(n => n.id === notesState.activeId);
+  document.getElementById('notes-textarea').value = note ? note.content : '';
+  showToast('Note deleted');
+}
 
 function activateNotes() {
   activeTab = null;
-  // Deactivate all doc panels and tabs
   ['pdf','docx','xlsx','txt','code','notes'].forEach(t => {
     document.getElementById(t + '-panel').classList.remove('active');
   });
@@ -1178,22 +1379,23 @@ function activateNotes() {
   document.getElementById('pdf-topbar-controls').style.display = 'none';
   setTypeStrip(null);
 
-  // Restore saved note
+  // Load state and render
+  if (!notesState) loadNotesState();
+  renderNoteTabs();
+  const note = notesState.notes.find(n => n.id === notesState.activeId);
   const ta = document.getElementById('notes-textarea');
-  ta.value = localStorage.getItem(NOTES_KEY) || '';
+  ta.value = note ? note.content : '';
   ta.focus();
-}
-
-function clearNotes() {
-  if (!confirm('Clear all notes?')) return;
-  document.getElementById('notes-textarea').value = '';
-  localStorage.removeItem(NOTES_KEY);
-  showToast('Notes cleared');
 }
 
 // Auto-save on input
 document.getElementById('notes-textarea').addEventListener('input', () => {
-  localStorage.setItem(NOTES_KEY, document.getElementById('notes-textarea').value);
+  if (!notesState) return;
+  const note = notesState.notes.find(n => n.id === notesState.activeId);
+  if (note) {
+    note.content = document.getElementById('notes-textarea').value;
+    saveNotesState();
+  }
 });
 
 // ── PDF ───────────────────────────────────────────────────────────────────────
