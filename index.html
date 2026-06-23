@@ -887,13 +887,21 @@ async function renderAllPdfPages() {
   const wrap = document.getElementById('pdf-canvas-wrap');
   wrap.innerHTML = '';
 
+  // Scale canvas by devicePixelRatio so pixels map 1:1 to physical screen pixels.
+  // Fixes blurry rendering on Android high-DPI displays (DPR 2x / 3x).
+  const dpr = window.devicePixelRatio || 1;
+
   for (let i = 1; i <= pdfDoc.numPages; i++) {
     const page = await pdfDoc.getPage(i);
-    const vp   = page.getViewport({ scale: pdfScale });
+    const vp   = page.getViewport({ scale: pdfScale * dpr });
     const canvas = document.createElement('canvas');
     canvas.className = 'pdf-page-canvas';
+    // Physical pixel dimensions
     canvas.width  = vp.width;
     canvas.height = vp.height;
+    // CSS dimensions scaled back down — renders crisp on HiDPI
+    canvas.style.width  = (vp.width  / dpr) + 'px';
+    canvas.style.height = (vp.height / dpr) + 'px';
     wrap.appendChild(canvas);
     await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
   }
