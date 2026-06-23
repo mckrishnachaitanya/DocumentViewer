@@ -107,9 +107,10 @@ html, body {
   letter-spacing: 0.08em;
   color: #fff;
 }
-#type-strip.pdf   { background: var(--red);   display: flex; }
-#type-strip.docx  { background: var(--blue);  display: flex; }
-#type-strip.xlsx  { background: var(--green); display: flex; }
+#type-strip.pdf   { background: var(--red);    display: flex; }
+#type-strip.docx  { background: var(--blue);   display: flex; }
+#type-strip.xlsx  { background: var(--green);  display: flex; }
+#type-strip.txt   { background: var(--muted);  display: flex; }
 
 /* ── Tab Bar ─────────────────────────────────────────────────────────────── */
 #tabbar {
@@ -155,6 +156,7 @@ html, body {
 .tab-dot.pdf  { background: var(--red); }
 .tab-dot.docx { background: var(--blue); }
 .tab-dot.xlsx { background: var(--green); }
+.tab-dot.txt  { background: var(--muted); }
 .tab-name { overflow: hidden; text-overflow: ellipsis; }
 .tab-close {
   margin-left: 2px;
@@ -403,6 +405,38 @@ html, body {
 }
 #xlsx-table td.selected { background: #e8f4fd; }
 
+/* ── TXT Viewer ──────────────────────────────────────────────────────────── */
+#txt-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+#txt-content-wrap {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+}
+
+#txt-content {
+  width: 100%;
+  max-width: 860px;
+  padding: 28px 20px;
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: text;
+}
+
 /* ── Empty / Drop State ──────────────────────────────────────────────────── */
 #empty-state {
   position: absolute;
@@ -463,6 +497,7 @@ html, body {
 .format-pill.pdf  { background: rgba(224,92,92,0.15);  color: var(--red);   border: 1px solid rgba(224,92,92,0.3);  }
 .format-pill.docx { background: rgba(79,142,247,0.15); color: var(--blue);  border: 1px solid rgba(79,142,247,0.3); }
 .format-pill.xlsx { background: rgba(76,175,130,0.15); color: var(--green); border: 1px solid rgba(76,175,130,0.3); }
+.format-pill.txt  { background: rgba(107,114,128,0.15); color: var(--muted); border: 1px solid rgba(107,114,128,0.3); }
 
 /* ── Toast ───────────────────────────────────────────────────────────────── */
 #toast {
@@ -602,12 +637,13 @@ html, body {
           <line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/>
         </svg>
         <h2>Drop a document here</h2>
-        <p>Open PDF, Word, or Excel files<br/>Files stay on your device — never uploaded</p>
+        <p>Open PDF, Word, Excel or text files<br/>Files stay on your device — never uploaded</p>
         <button id="open-file-btn" onclick="openFilePicker()">Choose file</button>
         <div class="format-pills">
           <span class="format-pill pdf">PDF</span>
           <span class="format-pill docx">DOCX</span>
           <span class="format-pill xlsx">XLSX</span>
+          <span class="format-pill txt">TXT</span>
         </div>
       </div>
     </div>
@@ -668,11 +704,28 @@ html, body {
       </div>
     </div>
 
+    <!-- TXT Panel -->
+    <div class="doc-panel" id="txt-panel">
+      <div id="txt-toolbar">
+        <span style="font-size:12px;color:var(--muted);">Plain text</span>
+        <div style="flex:1"></div>
+        <button class="icon-btn" onclick="triggerPrint()" title="Print">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+            <rect x="6" y="14" width="12" height="8"/>
+          </svg>
+        </button>
+      </div>
+      <div id="txt-content-wrap">
+        <div id="txt-content"></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <!-- Hidden file input -->
-<input type="file" id="file-input" accept=".pdf,.doc,.docx,.xls,.xlsx" style="display:none" onchange="handleFileInput(this)"/>
+<input type="file" id="file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt" style="display:none" onchange="handleFileInput(this)"/>
 
 <!-- Toast -->
 <div id="toast"></div>
@@ -759,14 +812,17 @@ async function handleFile(file) {
   const name = file.name;
   const ext  = name.split('.').pop().toLowerCase();
 
-  if (!['pdf','doc','docx','xls','xlsx'].includes(ext)) {
+  if (!['pdf','doc','docx','xls','xlsx','txt'].includes(ext)) {
     showToast('Unsupported file type');
     return;
   }
 
-  const type = ext === 'pdf' ? 'pdf' : ['doc','docx'].includes(ext) ? 'docx' : 'xlsx';
-  const id   = Date.now().toString();
-  const buf  = await file.arrayBuffer();
+  const type = ext === 'pdf' ? 'pdf'
+             : ['doc','docx'].includes(ext) ? 'docx'
+             : ['xls','xlsx'].includes(ext) ? 'xlsx'
+             : 'txt';
+  const id  = Date.now().toString();
+  const buf = await file.arrayBuffer();
 
   tabs.push({ id, name, type, buf });
   renderTabs();
@@ -813,7 +869,7 @@ function closeTab(id) {
 
 function showEmpty() {
   document.getElementById('empty-state').style.display = 'flex';
-  ['pdf','docx','xlsx'].forEach(t => {
+  ['pdf','docx','xlsx','txt'].forEach(t => {
     document.getElementById(t + '-panel').classList.remove('active');
   });
   setTypeStrip(null);
@@ -828,7 +884,7 @@ async function activateTab(id) {
 
   renderTabs();
   document.getElementById('empty-state').style.display = 'none';
-  ['pdf','docx','xlsx'].forEach(t => {
+  ['pdf','docx','xlsx','txt'].forEach(t => {
     document.getElementById(t + '-panel').classList.remove('active');
   });
   document.getElementById(tab.type + '-panel').classList.add('active');
@@ -840,6 +896,7 @@ async function activateTab(id) {
   if (tab.type === 'pdf')  await loadPdf(tab);
   if (tab.type === 'docx') await loadDocx(tab);
   if (tab.type === 'xlsx') await loadXlsx(tab);
+  if (tab.type === 'txt')  await loadTxt(tab);
 }
 
 // ── Type Strip ────────────────────────────────────────────────────────────────
@@ -977,6 +1034,18 @@ async function loadDocx(tab) {
     content.innerHTML = result.value || '<p style="color:var(--muted)">Empty document.</p>';
   } catch(e) {
     content.innerHTML = `<p style="color:var(--red)">Failed to load document: ${e.message}</p>`;
+  }
+}
+
+// ── TXT ───────────────────────────────────────────────────────────────────────
+async function loadTxt(tab) {
+  const content = document.getElementById('txt-content');
+  content.textContent = '';
+  try {
+    const text = new TextDecoder('utf-8').decode(tab.buf);
+    content.textContent = text || '(Empty file)';
+  } catch(e) {
+    content.textContent = `Failed to load file: ${e.message}`;
   }
 }
 
