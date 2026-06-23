@@ -30,6 +30,9 @@
   --blue-dim: #2a4a9a;
   --red:      #e05c5c;
   --green:    #4caf82;
+  --amber:    #f5a623;
+  --yellow:   #f7df1e;
+  --orange:   #e44d26;
   --radius:   10px;
   --bar-h:    52px;
   --tab-h:    40px;
@@ -111,6 +114,9 @@ html, body {
 #type-strip.docx  { background: var(--blue);   display: flex; }
 #type-strip.xlsx  { background: var(--green);  display: flex; }
 #type-strip.txt   { background: var(--muted);  display: flex; }
+#type-strip.json  { background: var(--amber);  display: flex; }
+#type-strip.js    { background: #b8a800;        display: flex; } /* darkened yellow for white text */
+#type-strip.html  { background: var(--orange); display: flex; }
 
 /* ── Tab Bar ─────────────────────────────────────────────────────────────── */
 #tabbar {
@@ -157,6 +163,9 @@ html, body {
 .tab-dot.docx { background: var(--blue); }
 .tab-dot.xlsx { background: var(--green); }
 .tab-dot.txt  { background: var(--muted); }
+.tab-dot.json { background: var(--amber); }
+.tab-dot.js   { background: var(--yellow); }
+.tab-dot.html { background: var(--orange); }
 .tab-name { overflow: hidden; text-overflow: ellipsis; }
 .tab-close {
   margin-left: 2px;
@@ -498,6 +507,53 @@ html, body {
 .format-pill.docx { background: rgba(79,142,247,0.15); color: var(--blue);  border: 1px solid rgba(79,142,247,0.3); }
 .format-pill.xlsx { background: rgba(76,175,130,0.15); color: var(--green); border: 1px solid rgba(76,175,130,0.3); }
 .format-pill.txt  { background: rgba(107,114,128,0.15); color: var(--muted); border: 1px solid rgba(107,114,128,0.3); }
+.format-pill.json { background: rgba(245,166,35,0.15); color: var(--amber); border: 1px solid rgba(245,166,35,0.3); }
+.format-pill.js   { background: rgba(247,223,30,0.15); color: #b8a800;      border: 1px solid rgba(247,223,30,0.4); }
+.format-pill.html { background: rgba(228,77,38,0.15);  color: var(--orange);border: 1px solid rgba(228,77,38,0.3); }
+
+/* ── Code Viewer (JSON / JS / HTML) ─────────────────────────────────────── */
+#code-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+#code-lang-label {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 5px;
+  color: #fff;
+}
+#code-lang-label.json { background: var(--amber); }
+#code-lang-label.js   { background: #b8a800; }
+#code-lang-label.html { background: var(--orange); }
+
+#code-content-wrap {
+  flex: 1;
+  overflow: auto;
+  background: #fff;
+}
+
+#code-content-wrap pre {
+  margin: 0;
+  padding: 20px;
+  font-size: 13px;
+  line-height: 1.65;
+  background: transparent !important;
+}
+
+#code-content-wrap code {
+  font-family: 'Courier New', monospace;
+  background: transparent !important;
+  user-select: text;
+}
 
 /* ── Toast ───────────────────────────────────────────────────────────────── */
 #toast {
@@ -637,13 +693,16 @@ html, body {
           <line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/>
         </svg>
         <h2>Drop a document here</h2>
-        <p>Open PDF, Word, Excel or text files<br/>Files stay on your device — never uploaded</p>
+        <p>Open PDF, Word, Excel, or code files<br/>Files stay on your device — never uploaded</p>
         <button id="open-file-btn" onclick="openFilePicker()">Choose file</button>
         <div class="format-pills">
           <span class="format-pill pdf">PDF</span>
           <span class="format-pill docx">DOCX</span>
           <span class="format-pill xlsx">XLSX</span>
           <span class="format-pill txt">TXT</span>
+          <span class="format-pill json">JSON</span>
+          <span class="format-pill js">JS</span>
+          <span class="format-pill html">HTML</span>
         </div>
       </div>
     </div>
@@ -721,11 +780,28 @@ html, body {
       </div>
     </div>
 
+    <!-- Code Panel (JSON / JS / HTML) -->
+    <div class="doc-panel" id="code-panel">
+      <div id="code-toolbar">
+        <span id="code-lang-label"></span>
+        <div style="flex:1"></div>
+        <button class="icon-btn" onclick="triggerPrint()" title="Print">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+            <rect x="6" y="14" width="12" height="8"/>
+          </svg>
+        </button>
+      </div>
+      <div id="code-content-wrap">
+        <pre><code id="code-content"></code></pre>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <!-- Hidden file input -->
-<input type="file" id="file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt" style="display:none" onchange="handleFileInput(this)"/>
+<input type="file" id="file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.json,.js,.html" style="display:none" onchange="handleFileInput(this)"/>
 
 <!-- Toast -->
 <div id="toast"></div>
@@ -734,9 +810,14 @@ html, body {
 <script>
 // ── CDN Loader ────────────────────────────────────────────────────────────────
 const CDN = {
-  mammoth: 'https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js',
-  xlsx:    'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
-  hf:      'https://cdn.jsdelivr.net/npm/hyperformula@2.6.1/dist/hyperformula.full.min.js',
+  mammoth:  'https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js',
+  xlsx:     'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+  hf:       'https://cdn.jsdelivr.net/npm/hyperformula@2.6.1/dist/hyperformula.full.min.js',
+  hljs:     'https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/core.min.js',
+  hljsJson: 'https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/es/languages/json.min.js',
+  hljsJs:   'https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/es/languages/javascript.min.js',
+  hljsHtml: 'https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/es/languages/xml.min.js',
+  hljsCss:  'https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-light.min.css',
 };
 
 function loadScript(src) {
@@ -745,6 +826,16 @@ function loadScript(src) {
     const s = document.createElement('script');
     s.src = src; s.onload = res; s.onerror = rej;
     document.head.appendChild(s);
+  });
+}
+
+function loadStylesheet(href) {
+  if (document.querySelector(`link[href="${href}"]`)) return Promise.resolve();
+  return new Promise((res, rej) => {
+    const l = document.createElement('link');
+    l.rel = 'stylesheet'; l.href = href;
+    l.onload = res; l.onerror = rej;
+    document.head.appendChild(l);
   });
 }
 
@@ -812,14 +903,15 @@ async function handleFile(file) {
   const name = file.name;
   const ext  = name.split('.').pop().toLowerCase();
 
-  if (!['pdf','doc','docx','xls','xlsx','txt'].includes(ext)) {
+  if (!['pdf','doc','docx','xls','xlsx','txt','json','js','html'].includes(ext)) {
     showToast('Unsupported file type');
     return;
   }
 
-  const type = ext === 'pdf' ? 'pdf'
-             : ['doc','docx'].includes(ext) ? 'docx'
-             : ['xls','xlsx'].includes(ext) ? 'xlsx'
+  const type = ext === 'pdf'                    ? 'pdf'
+             : ['doc','docx'].includes(ext)     ? 'docx'
+             : ['xls','xlsx'].includes(ext)     ? 'xlsx'
+             : ['json','js','html'].includes(ext)? ext
              : 'txt';
   const id  = Date.now().toString();
   const buf = await file.arrayBuffer();
@@ -869,7 +961,7 @@ function closeTab(id) {
 
 function showEmpty() {
   document.getElementById('empty-state').style.display = 'flex';
-  ['pdf','docx','xlsx','txt'].forEach(t => {
+  ['pdf','docx','xlsx','txt','code'].forEach(t => {
     document.getElementById(t + '-panel').classList.remove('active');
   });
   setTypeStrip(null);
@@ -884,10 +976,12 @@ async function activateTab(id) {
 
   renderTabs();
   document.getElementById('empty-state').style.display = 'none';
-  ['pdf','docx','xlsx','txt'].forEach(t => {
+  ['pdf','docx','xlsx','txt','code'].forEach(t => {
     document.getElementById(t + '-panel').classList.remove('active');
   });
-  document.getElementById(tab.type + '-panel').classList.add('active');
+
+  const panelType = ['json','js','html'].includes(tab.type) ? 'code' : tab.type;
+  document.getElementById(panelType + '-panel').classList.add('active');
   setTypeStrip(tab.type);
 
   document.getElementById('save-btn').style.display = tab.type === 'xlsx' ? 'flex' : 'none';
@@ -897,6 +991,7 @@ async function activateTab(id) {
   if (tab.type === 'docx') await loadDocx(tab);
   if (tab.type === 'xlsx') await loadXlsx(tab);
   if (tab.type === 'txt')  await loadTxt(tab);
+  if (['json','js','html'].includes(tab.type)) await loadCode(tab);
 }
 
 // ── Type Strip ────────────────────────────────────────────────────────────────
@@ -1047,6 +1142,39 @@ async function loadTxt(tab) {
   } catch(e) {
     content.textContent = `Failed to load file: ${e.message}`;
   }
+}
+
+// ── CODE (JSON / JS / HTML) ───────────────────────────────────────────────────
+let hljsReady = false;
+
+async function loadCode(tab) {
+  const content  = document.getElementById('code-content');
+  const label    = document.getElementById('code-lang-label');
+  content.textContent = '';
+
+  // Set toolbar label
+  label.className = `code-lang-label ${tab.type}`;
+  label.textContent = tab.type.toUpperCase();
+
+  const text = new TextDecoder('utf-8').decode(tab.buf);
+
+  // Load highlight.js + language + theme lazily
+  if (!hljsReady) {
+    await loadStylesheet(CDN.hljsCss);
+    await loadScript(CDN.hljs);
+    // Languages ship as ES modules on jsDelivr — use script tag approach
+    await Promise.all([
+      loadScript('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js'),
+      loadScript('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js'),
+      loadScript('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js'),
+    ]);
+    hljsReady = true;
+  }
+
+  const langMap = { json: 'json', js: 'javascript', html: 'xml' };
+  content.textContent = text;
+  content.className = `language-${langMap[tab.type]}`;
+  hljs.highlightElement(content);
 }
 
 // ── XLSX ──────────────────────────────────────────────────────────────────────
