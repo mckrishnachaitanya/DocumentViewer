@@ -446,6 +446,54 @@ html, body {
   user-select: text;
 }
 
+/* ── Notes Panel ─────────────────────────────────────────────────────────── */
+#notes-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+#notes-toolbar-title {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+#notes-clear-btn {
+  margin-left: auto;
+  padding: 4px 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+#notes-clear-btn:hover { border-color: var(--red); color: var(--red); }
+
+#notes-textarea {
+  flex: 1;
+  width: 100%;
+  padding: 24px 20px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.75;
+  border: none;
+  outline: none;
+  resize: none;
+  user-select: text;
+  -webkit-user-select: text;
+}
+#notes-textarea::placeholder { color: var(--muted); }
+
 /* ── Empty / Drop State ──────────────────────────────────────────────────── */
 #empty-state {
   position: absolute;
@@ -701,6 +749,10 @@ html, body {
 
   <!-- Tab bar -->
   <div id="tabbar">
+    <div id="notes-tab" class="tab" onclick="activateNotes()" title="Notes">
+      <span class="tab-dot" style="background:#a78bfa"></span>
+      <span class="tab-name">notes</span>
+    </div>
     <div id="add-tab-btn" onclick="openFilePicker()" title="Open file">+</div>
   </div>
 
@@ -817,6 +869,15 @@ html, body {
       <div id="code-content-wrap">
         <pre><code id="code-content"></code></pre>
       </div>
+    </div>
+
+    <!-- Notes Panel -->
+    <div class="doc-panel" id="notes-panel">
+      <div id="notes-toolbar">
+        <span id="notes-toolbar-title">— scratchpad —</span>
+        <button id="notes-clear-btn" onclick="clearNotes()">Clear</button>
+      </div>
+      <textarea id="notes-textarea" placeholder="Write anything… reminders, thoughts, quick notes. Saves automatically."></textarea>
     </div>
 
   </div>
@@ -1058,9 +1119,10 @@ function closeTab(id) {
 
 function showEmpty() {
   document.getElementById('empty-state').style.display = 'flex';
-  ['pdf','docx','xlsx','txt','code'].forEach(t => {
+  ['pdf','docx','xlsx','txt','code','notes'].forEach(t => {
     document.getElementById(t + '-panel').classList.remove('active');
   });
+  document.getElementById('notes-tab').classList.remove('active');
   setTypeStrip(null);
   document.getElementById('save-btn').style.display = 'none';
   document.getElementById('pdf-topbar-controls').style.display = 'none';
@@ -1073,7 +1135,8 @@ async function activateTab(id) {
 
   renderTabs();
   document.getElementById('empty-state').style.display = 'none';
-  ['pdf','docx','xlsx','txt','code'].forEach(t => {
+  document.getElementById('notes-tab').classList.remove('active');
+  ['pdf','docx','xlsx','txt','code','notes'].forEach(t => {
     document.getElementById(t + '-panel').classList.remove('active');
   });
 
@@ -1097,6 +1160,41 @@ function setTypeStrip(type) {
   strip.className = 'type-strip' + (type ? ' ' + type : '');
   strip.textContent = type ? type.toUpperCase() : '';
 }
+
+// ── Notes ─────────────────────────────────────────────────────────────────────
+const NOTES_KEY = 'docviewer_notes';
+
+function activateNotes() {
+  activeTab = null;
+  // Deactivate all doc panels and tabs
+  ['pdf','docx','xlsx','txt','code','notes'].forEach(t => {
+    document.getElementById(t + '-panel').classList.remove('active');
+  });
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('notes-tab').classList.add('active');
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('notes-panel').classList.add('active');
+  document.getElementById('save-btn').style.display = 'none';
+  document.getElementById('pdf-topbar-controls').style.display = 'none';
+  setTypeStrip(null);
+
+  // Restore saved note
+  const ta = document.getElementById('notes-textarea');
+  ta.value = localStorage.getItem(NOTES_KEY) || '';
+  ta.focus();
+}
+
+function clearNotes() {
+  if (!confirm('Clear all notes?')) return;
+  document.getElementById('notes-textarea').value = '';
+  localStorage.removeItem(NOTES_KEY);
+  showToast('Notes cleared');
+}
+
+// Auto-save on input
+document.getElementById('notes-textarea').addEventListener('input', () => {
+  localStorage.setItem(NOTES_KEY, document.getElementById('notes-textarea').value);
+});
 
 // ── PDF ───────────────────────────────────────────────────────────────────────
 let pdfjsLib = null;
