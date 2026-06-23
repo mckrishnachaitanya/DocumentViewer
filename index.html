@@ -888,20 +888,23 @@ async function renderAllPdfPages() {
   wrap.innerHTML = '';
 
   // Scale canvas by devicePixelRatio so pixels map 1:1 to physical screen pixels.
-  // Fixes blurry rendering on Android high-DPI displays (DPR 2x / 3x).
+  // Also enforce a minimum render scale so 100% / fit-width look as sharp as 125%.
+  // The canvas is always drawn at high resolution; CSS scales it back down for display.
   const dpr = window.devicePixelRatio || 1;
+  const MIN_RENDER_SCALE = 1.5; // never render below this regardless of zoom choice
+  const renderScale = Math.max(pdfScale, MIN_RENDER_SCALE);
 
   for (let i = 1; i <= pdfDoc.numPages; i++) {
     const page = await pdfDoc.getPage(i);
-    const vp   = page.getViewport({ scale: pdfScale * dpr });
+    const vp   = page.getViewport({ scale: renderScale * dpr });
     const canvas = document.createElement('canvas');
     canvas.className = 'pdf-page-canvas';
     // Physical pixel dimensions
     canvas.width  = vp.width;
     canvas.height = vp.height;
-    // CSS dimensions scaled back down — renders crisp on HiDPI
-    canvas.style.width  = (vp.width  / dpr) + 'px';
-    canvas.style.height = (vp.height / dpr) + 'px';
+    // CSS dimensions use pdfScale (what the user chose) — renderScale is only for pixel quality
+    canvas.style.width  = (page.getViewport({ scale: pdfScale }).width)  + 'px';
+    canvas.style.height = (page.getViewport({ scale: pdfScale }).height) + 'px';
     wrap.appendChild(canvas);
     await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
   }
