@@ -872,6 +872,79 @@ let xlsxCurrentSheet = null;
 let xlsxDirty = false;
 let hfInstance = null;
 
+// ── IndexedDB ─────────────────────────────────────────────────────────────────
+const DB_NAME    = 'docviewer';
+const DB_VERSION = 1;
+const STORE      = 'files';
+let db = null;
+
+function openDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(STORE)) {
+        // keyPath = id, index on 'order' so we restore in open order
+        const store = d.createObjectStore(STORE, { keyPath: 'id' });
+        store.createIndex('order', 'order', { unique: false });
+      }
+    };
+    req.onsuccess = e => { db = e.target.result; res(db); };
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
+function dbSave(tab) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).put({
+      id:    tab.id,
+      name:  tab.name,
+      type:  tab.type,
+      buf:   tab.buf,
+      order: Date.now()
+    });
+    tx.oncomplete = res;
+    tx.onerror    = e => rej(e.target.error);
+  });
+}
+
+function dbDelete(id) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).delete(id);
+    tx.oncomplete = res;
+    tx.onerror    = e => rej(e.target.error);
+  });
+}
+
+function dbLoadAll() {
+  return new Promise((res, rej) => {
+    const tx    = db.transaction(STORE, 'readonly');
+    const index = tx.objectStore(STORE).index('order');
+    const req   = index.getAll();
+    req.onsuccess = e => res(e.target.result);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
+// ── Boot: open DB then restore session ───────────────────────────────────────
+(async () => {
+  try {
+    await openDB();
+    const saved = await dbLoadAll();
+    if (saved.length) {
+      for (const file of saved) {
+        tabs.push({ id: file.id, name: file.name, type: file.type, buf: file.buf });
+      }
+      renderTabs();
+      activateTab(tabs[0].id);
+    }
+  } catch(e) {
+    console.warn('IndexedDB restore failed:', e);
+  }
+})();
+
 // ── Service Worker ────────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').then(reg => {
@@ -939,6 +1012,7 @@ async function handleFile(file) {
   const buf = await file.arrayBuffer();
 
   tabs.push({ id, name, type, buf });
+  if (db) dbSave({ id, name, type, buf }).catch(console.warn);
   renderTabs();
   activateTab(id);
 }
@@ -973,6 +1047,7 @@ function renderTabs() {
 function closeTab(id) {
   const idx = tabs.findIndex(t => t.id === id);
   tabs.splice(idx, 1);
+  if (db) dbDelete(id).catch(console.warn);
   if (activeTab === id) {
     activeTab = tabs[Math.min(idx, tabs.length - 1)]?.id || null;
   }
