@@ -538,14 +538,14 @@ html, body {
 #code-content-wrap {
   flex: 1;
   overflow: auto;
-  background: #fff;
+  background: #1a1d2e;
 }
 
 #code-content-wrap pre {
   margin: 0;
   padding: 20px;
   font-size: 13px;
-  line-height: 1.65;
+  line-height: 1.75;
   background: transparent !important;
 }
 
@@ -553,7 +553,29 @@ html, body {
   font-family: 'Courier New', monospace;
   background: transparent !important;
   user-select: text;
+  color: #e0e4f0;
 }
+
+/* ── Syntax token colors (dark theme, no CDN needed) ─────────────────────── */
+#code-content-wrap .hljs-keyword,
+#code-content-wrap .hljs-selector-tag   { color: #c792ea; }
+#code-content-wrap .hljs-string         { color: #c3e88d; }
+#code-content-wrap .hljs-number         { color: #f78c6c; }
+#code-content-wrap .hljs-literal        { color: #ff5874; }
+#code-content-wrap .hljs-comment        { color: #546e7a; font-style: italic; }
+#code-content-wrap .hljs-attr,
+#code-content-wrap .hljs-attribute      { color: #7ec8e3; }
+#code-content-wrap .hljs-name,
+#code-content-wrap .hljs-tag            { color: #f07178; }
+#code-content-wrap .hljs-variable,
+#code-content-wrap .hljs-template-variable { color: #82aaff; }
+#code-content-wrap .hljs-built_in,
+#code-content-wrap .hljs-builtin-name   { color: #ffcb6b; }
+#code-content-wrap .hljs-function,
+#code-content-wrap .hljs-title          { color: #82aaff; }
+#code-content-wrap .hljs-punctuation,
+#code-content-wrap .hljs-operator       { color: #89ddff; }
+#code-content-wrap .hljs-meta           { color: #f07178; }
 
 /* ── Toast ───────────────────────────────────────────────────────────────── */
 #toast {
@@ -1158,11 +1180,9 @@ async function loadCode(tab) {
 
   const text = new TextDecoder('utf-8').decode(tab.buf);
 
-  // Load highlight.js + language + theme lazily
+  // Load highlight.js + language grammars lazily (no theme CSS — we use our own dark theme)
   if (!hljsReady) {
-    await loadStylesheet(CDN.hljsCss);
     await loadScript(CDN.hljs);
-    // Languages ship as ES modules on jsDelivr — use script tag approach
     await Promise.all([
       loadScript('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js'),
       loadScript('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js'),
