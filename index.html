@@ -522,6 +522,24 @@ html, body {
 }
 #notes-add-btn:hover { color: var(--text); }
 
+.notes-font-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 8px;
+  color: var(--muted);
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  user-select: none;
+  transition: color 0.12s;
+}
+.notes-font-btn:hover { color: var(--text); }
+#notes-font-small { font-size: 11px; border-left: 1px solid var(--border); }
+#notes-font-large { font-size: 15px; border-left: 1px solid var(--border); }
+
 #notes-textarea {
   flex: 1;
   width: 100%;
@@ -920,6 +938,9 @@ html, body {
     <div class="doc-panel" id="notes-panel">
       <div id="notes-tabbar">
         <div id="notes-add-btn" onclick="addNote()" title="New note">+</div>
+        <div style="flex:1"></div>
+        <div id="notes-font-small" class="notes-font-btn" onclick="notesAdjustFont(-1)" title="Decrease font size">A−</div>
+        <div id="notes-font-large" class="notes-font-btn" onclick="notesAdjustFont(1)" title="Increase font size">A+</div>
       </div>
       <textarea id="notes-textarea" placeholder="Start typing… saves automatically."></textarea>
     </div>
@@ -1385,6 +1406,7 @@ function activateNotes() {
   const note = notesState.notes.find(n => n.id === notesState.activeId);
   const ta = document.getElementById('notes-textarea');
   ta.value = note ? note.content : '';
+  applyNotesFontSize();
   ta.focus();
 }
 
@@ -1397,6 +1419,25 @@ document.getElementById('notes-textarea').addEventListener('input', () => {
     saveNotesState();
   }
 });
+
+// ── Notes font size ───────────────────────────────────────────────────────────
+const NOTES_FONT_KEY = 'docviewer_notes_font';
+const NOTES_FONT_MIN = 11;
+const NOTES_FONT_MAX = 22;
+
+function notesAdjustFont(delta) {
+  const ta = document.getElementById('notes-textarea');
+  const current = parseInt(ta.style.fontSize) || parseInt(localStorage.getItem(NOTES_FONT_KEY)) || 13;
+  const next = Math.min(NOTES_FONT_MAX, Math.max(NOTES_FONT_MIN, current + delta));
+  ta.style.fontSize = next + 'px';
+  localStorage.setItem(NOTES_FONT_KEY, next);
+  showToast(`Font size: ${next}px`);
+}
+
+function applyNotesFontSize() {
+  const saved = localStorage.getItem(NOTES_FONT_KEY);
+  if (saved) document.getElementById('notes-textarea').style.fontSize = saved + 'px';
+}
 
 // ── PDF ───────────────────────────────────────────────────────────────────────
 let pdfjsLib = null;
