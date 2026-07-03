@@ -1726,6 +1726,7 @@ async function loadCode(tab) {
   const langMap = { json: 'json', js: 'javascript', html: 'xml' };
   content.textContent = text;
   content.className = `language-${langMap[tab.type]}`;
+  content.removeAttribute('data-highlighted');
   hljs.highlightElement(content);
 
   document.getElementById('code-linenums').textContent = buildLineNumbers(text || '');
