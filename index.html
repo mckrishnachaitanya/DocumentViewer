@@ -1704,7 +1704,9 @@ let hljsReady = false;
 async function loadCode(tab) {
   const content  = document.getElementById('code-content');
   const label    = document.getElementById('code-lang-label');
-  content.textContent = '';
+  const linenums = document.getElementById('code-linenums');
+  content.textContent  = '';
+  linenums.textContent = '';
 
   // Set toolbar label
   label.className = `code-lang-label ${tab.type}`;
@@ -1712,24 +1714,29 @@ async function loadCode(tab) {
 
   const text = new TextDecoder('utf-8').decode(tab.buf);
 
-  // Load highlight.js + language grammars lazily (no theme CSS — we use our own dark theme)
-  if (!hljsReady) {
-    await loadScript(CDN.hljs);
-    await Promise.all([
-      loadScript('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js'),
-      loadScript('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js'),
-      loadScript('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js'),
-    ]);
-    hljsReady = true;
-  }
+  // Plain text + line numbers are set immediately so they always show,
+  // even if syntax highlighting fails to load below.
+  content.textContent = text;
+  linenums.textContent = buildLineNumbers(text || '');
 
   const langMap = { json: 'json', js: 'javascript', html: 'xml' };
-  content.textContent = text;
-  content.className = `language-${langMap[tab.type]}`;
-  content.removeAttribute('data-highlighted');
-  hljs.highlightElement(content);
-
-  document.getElementById('code-linenums').textContent = buildLineNumbers(text || '');
+  try {
+    // Load highlight.js + language grammars lazily (no theme CSS — we use our own dark theme)
+    if (!hljsReady) {
+      await loadScript(CDN.hljs);
+      await Promise.all([
+        loadScript('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js'),
+        loadScript('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js'),
+        loadScript('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js'),
+      ]);
+      hljsReady = true;
+    }
+    content.className = `language-${langMap[tab.type]}`;
+    content.removeAttribute('data-highlighted');
+    hljs.highlightElement(content);
+  } catch(e) {
+    console.warn('Syntax highlighting unavailable:', e);
+  }
 }
 
 // ── XLSX ──────────────────────────────────────────────────────────────────────
