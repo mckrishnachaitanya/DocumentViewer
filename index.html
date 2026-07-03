@@ -427,22 +427,36 @@ html, body {
 
 #txt-content-wrap {
   flex: 1;
-  overflow-y: auto;
+  overflow: auto;
   background: var(--bg);
   display: flex;
-  justify-content: center;
+  align-items: flex-start;
+}
+
+#txt-linenums {
+  position: sticky;
+  left: 0;
+  flex-shrink: 0;
+  background: var(--surface);
+  color: var(--muted);
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.75;
+  padding: 28px 12px 28px 16px;
+  text-align: right;
+  white-space: pre;
+  user-select: none;
+  border-right: 1px solid var(--border);
+  z-index: 1;
 }
 
 #txt-content {
-  width: 100%;
-  max-width: 860px;
   padding: 28px 20px;
   color: var(--text);
   font-family: 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.75;
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
   user-select: text;
 }
 
@@ -650,6 +664,25 @@ html, body {
   flex: 1;
   overflow: auto;
   background: #1a1d2e;
+  display: flex;
+  align-items: flex-start;
+}
+
+#code-linenums {
+  position: sticky;
+  left: 0;
+  flex-shrink: 0;
+  background: #1a1d2e;
+  color: #4a5164;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.75;
+  padding: 20px 12px 20px 16px;
+  text-align: right;
+  white-space: pre;
+  user-select: none;
+  border-right: 1px solid var(--border);
+  z-index: 1;
 }
 
 #code-content-wrap pre {
@@ -687,6 +720,50 @@ html, body {
 #code-content-wrap .hljs-punctuation,
 #code-content-wrap .hljs-operator       { color: #89ddff; }
 #code-content-wrap .hljs-meta           { color: #f07178; }
+
+/* ── Content Search (DOCX / TXT / Code / XLSX) ──────────────────────────── */
+.content-search-box {
+  padding: 5px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  width: 130px;
+  max-width: 40vw;
+}
+.content-search-box:focus { border-color: var(--blue); }
+.content-search-box::placeholder { color: var(--muted); }
+
+.search-count {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  min-width: 32px;
+  text-align: center;
+}
+
+.search-nav-btn {
+  width: 26px !important;
+  height: 26px !important;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+mark.search-hit {
+  background: rgba(245,166,35,0.45);
+  color: inherit;
+  border-radius: 2px;
+}
+mark.search-hit.active {
+  background: var(--amber);
+  color: #1a1a1a;
+}
+
+#xlsx-table td.search-hit-cell { background: #fff3b0 !important; }
+#xlsx-table td.search-hit-cell.active { background: #ffd54f !important; }
 
 /* ── Toast ───────────────────────────────────────────────────────────────── */
 #toast {
@@ -876,6 +953,12 @@ html, body {
       <div id="docx-toolbar">
         <span style="font-size:12px;color:var(--muted);">View only</span>
         <div style="flex:1"></div>
+        <input id="docx-search-box" class="content-search-box" type="search" placeholder="Search…"
+          oninput="runContentSearch('docx','docx-content','docx-search-count', this.value)"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();searchNav('docx','docx-search-count',1);}"/>
+        <span id="docx-search-count" class="search-count"></span>
+        <button class="icon-btn search-nav-btn" onclick="searchNav('docx','docx-search-count',-1)" title="Previous match">‹</button>
+        <button class="icon-btn search-nav-btn" onclick="searchNav('docx','docx-search-count',1)" title="Next match">›</button>
         <button class="icon-btn" onclick="triggerPrint()" title="Save as PDF via print">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
@@ -893,6 +976,12 @@ html, body {
       <div id="xlsx-toolbar">
         <div id="xlsx-sheet-tabs"></div>
         <div style="flex:1"></div>
+        <input id="xlsx-search-box" class="content-search-box" type="search" placeholder="Search…"
+          oninput="xlsxSearch(this.value)"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();xlsxSearchNav(1);}"/>
+        <span id="xlsx-search-count" class="search-count"></span>
+        <button class="icon-btn search-nav-btn" onclick="xlsxSearchNav(-1)" title="Previous match">‹</button>
+        <button class="icon-btn search-nav-btn" onclick="xlsxSearchNav(1)" title="Next match">›</button>
         <span id="xlsx-cell-ref"></span>
       </div>
       <div id="xlsx-table-wrap">
@@ -905,6 +994,12 @@ html, body {
       <div id="txt-toolbar">
         <span style="font-size:12px;color:var(--muted);">Plain text</span>
         <div style="flex:1"></div>
+        <input id="txt-search-box" class="content-search-box" type="search" placeholder="Search…"
+          oninput="runContentSearch('txt','txt-content','txt-search-count', this.value)"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();searchNav('txt','txt-search-count',1);}"/>
+        <span id="txt-search-count" class="search-count"></span>
+        <button class="icon-btn search-nav-btn" onclick="searchNav('txt','txt-search-count',-1)" title="Previous match">‹</button>
+        <button class="icon-btn search-nav-btn" onclick="searchNav('txt','txt-search-count',1)" title="Next match">›</button>
         <button class="icon-btn" onclick="triggerPrint()" title="Print">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
@@ -913,6 +1008,7 @@ html, body {
         </button>
       </div>
       <div id="txt-content-wrap">
+        <div id="txt-linenums"></div>
         <div id="txt-content"></div>
       </div>
     </div>
@@ -922,6 +1018,12 @@ html, body {
       <div id="code-toolbar">
         <span id="code-lang-label"></span>
         <div style="flex:1"></div>
+        <input id="code-search-box" class="content-search-box" type="search" placeholder="Search…"
+          oninput="runContentSearch('code','code-content','code-search-count', this.value)"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();searchNav('code','code-search-count',1);}"/>
+        <span id="code-search-count" class="search-count"></span>
+        <button class="icon-btn search-nav-btn" onclick="searchNav('code','code-search-count',-1)" title="Previous match">‹</button>
+        <button class="icon-btn search-nav-btn" onclick="searchNav('code','code-search-count',1)" title="Next match">›</button>
         <button class="icon-btn" onclick="triggerPrint()" title="Print">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
@@ -930,6 +1032,7 @@ html, body {
         </button>
       </div>
       <div id="code-content-wrap">
+        <div id="code-linenums"></div>
         <pre><code id="code-content"></code></pre>
       </div>
     </div>
@@ -1191,6 +1294,7 @@ function showEmpty() {
   setTypeStrip(null);
   document.getElementById('save-btn').style.display = 'none';
   document.getElementById('pdf-topbar-controls').style.display = 'none';
+  resetContentSearches();
 }
 
 async function activateTab(id) {
@@ -1204,6 +1308,7 @@ async function activateTab(id) {
   ['pdf','docx','xlsx','txt','code','notes'].forEach(t => {
     document.getElementById(t + '-panel').classList.remove('active');
   });
+  resetContentSearches();
 
   const panelType = ['json','js','html'].includes(tab.type) ? 'code' : tab.type;
   document.getElementById(panelType + '-panel').classList.add('active');
@@ -1392,6 +1497,7 @@ function activateNotes() {
   ['pdf','docx','xlsx','txt','code','notes'].forEach(t => {
     document.getElementById(t + '-panel').classList.remove('active');
   });
+  resetContentSearches();
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('notes-tab').classList.add('active');
   document.getElementById('empty-state').style.display = 'none';
@@ -1572,14 +1678,24 @@ async function loadDocx(tab) {
 
 // ── TXT ───────────────────────────────────────────────────────────────────────
 async function loadTxt(tab) {
-  const content = document.getElementById('txt-content');
-  content.textContent = '';
+  const content   = document.getElementById('txt-content');
+  const linenums  = document.getElementById('txt-linenums');
+  content.textContent  = '';
+  linenums.textContent = '';
   try {
     const text = new TextDecoder('utf-8').decode(tab.buf);
     content.textContent = text || '(Empty file)';
+    linenums.textContent = buildLineNumbers(text || '');
   } catch(e) {
     content.textContent = `Failed to load file: ${e.message}`;
   }
+}
+
+function buildLineNumbers(text) {
+  const lineCount = (text.match(/\n/g) || []).length + 1;
+  const nums = new Array(lineCount);
+  for (let i = 0; i < lineCount; i++) nums[i] = i + 1;
+  return nums.join('\n');
 }
 
 // ── CODE (JSON / JS / HTML) ───────────────────────────────────────────────────
@@ -1611,6 +1727,8 @@ async function loadCode(tab) {
   content.textContent = text;
   content.className = `language-${langMap[tab.type]}`;
   hljs.highlightElement(content);
+
+  document.getElementById('code-linenums').textContent = buildLineNumbers(text || '');
 }
 
 // ── XLSX ──────────────────────────────────────────────────────────────────────
@@ -1635,6 +1753,11 @@ async function loadXlsx(tab) {
         tabsEl.querySelectorAll('.sheet-tab').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         renderXlsxSheet(name);
+        const xlsxInput = document.getElementById('xlsx-search-box');
+        if (xlsxInput) xlsxInput.value = '';
+        const xlsxCount = document.getElementById('xlsx-search-count');
+        if (xlsxCount) xlsxCount.textContent = '';
+        searchState.xlsx = { marks: [], idx: -1 };
       };
       tabsEl.appendChild(btn);
     });
@@ -1722,6 +1845,131 @@ async function saveXlsx() {
 // ── Print ─────────────────────────────────────────────────────────────────────
 function triggerPrint() {
   window.print();
+}
+
+// ── Content Search (DOCX / TXT / Code) ──────────────────────────────────────
+const searchState = { docx: { marks: [], idx: -1 }, txt: { marks: [], idx: -1 }, code: { marks: [], idx: -1 }, xlsx: { marks: [], idx: -1 } };
+
+function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+function clearHighlights(container) {
+  if (!container) return;
+  container.querySelectorAll('mark.search-hit').forEach(m => {
+    const parent = m.parentNode;
+    parent.replaceChild(document.createTextNode(m.textContent), m);
+    parent.normalize();
+  });
+}
+
+function highlightMatches(container, query) {
+  clearHighlights(container);
+  if (!container || !query) return [];
+  const regex = new RegExp(escapeRegex(query), 'gi');
+  const marks = [];
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
+  const textNodes = [];
+  let node;
+  while (node = walker.nextNode()) textNodes.push(node);
+  textNodes.forEach(tn => {
+    const text = tn.nodeValue;
+    regex.lastIndex = 0;
+    if (!regex.test(text)) return;
+    regex.lastIndex = 0;
+    const frag = document.createDocumentFragment();
+    let lastIndex = 0, m;
+    while ((m = regex.exec(text))) {
+      if (m.index > lastIndex) frag.appendChild(document.createTextNode(text.slice(lastIndex, m.index)));
+      const mark = document.createElement('mark');
+      mark.className = 'search-hit';
+      mark.textContent = m[0];
+      frag.appendChild(mark);
+      marks.push(mark);
+      lastIndex = m.index + m[0].length;
+      if (m.index === regex.lastIndex) regex.lastIndex++;
+    }
+    if (lastIndex < text.length) frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+    tn.parentNode.replaceChild(frag, tn);
+  });
+  return marks;
+}
+
+function runContentSearch(panelKey, containerId, countElId, query) {
+  const container = document.getElementById(containerId);
+  const marks = highlightMatches(container, query);
+  searchState[panelKey] = { marks, idx: marks.length ? 0 : -1 };
+  const countEl = document.getElementById(countElId);
+  if (countEl) countEl.textContent = !query ? '' : (marks.length ? `1/${marks.length}` : 'No matches');
+  if (marks.length) focusMatch(panelKey);
+}
+
+function focusMatch(panelKey) {
+  const st = searchState[panelKey];
+  if (!st || !st.marks.length || st.idx < 0) return;
+  st.marks.forEach(m => m.classList.remove('active'));
+  const m = st.marks[st.idx];
+  m.classList.add('active');
+  m.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+function searchNav(panelKey, countElId, dir) {
+  const st = searchState[panelKey];
+  if (!st || !st.marks.length) return;
+  st.idx = (st.idx + dir + st.marks.length) % st.marks.length;
+  focusMatch(panelKey);
+  const countEl = document.getElementById(countElId);
+  if (countEl) countEl.textContent = `${st.idx + 1}/${st.marks.length}`;
+}
+
+function resetContentSearches() {
+  ['docx', 'txt', 'code'].forEach(key => {
+    searchState[key] = { marks: [], idx: -1 };
+    const input = document.getElementById(key + '-search-box');
+    if (input) input.value = '';
+    const countEl = document.getElementById(key + '-search-count');
+    if (countEl) countEl.textContent = '';
+    clearHighlights(document.getElementById(key + '-content'));
+  });
+  const xlsxInput = document.getElementById('xlsx-search-box');
+  if (xlsxInput) xlsxInput.value = '';
+  const xlsxCount = document.getElementById('xlsx-search-count');
+  if (xlsxCount) xlsxCount.textContent = '';
+  document.querySelectorAll('#xlsx-table td.search-hit-cell').forEach(td => td.classList.remove('search-hit-cell', 'active'));
+  searchState.xlsx = { marks: [], idx: -1 };
+}
+
+// ── XLSX cell search ──────────────────────────────────────────────────────────
+function xlsxSearch(query) {
+  const cells = Array.from(document.querySelectorAll('#xlsx-table td:not(.row-header)'));
+  cells.forEach(td => td.classList.remove('search-hit-cell', 'active'));
+  const countEl = document.getElementById('xlsx-search-count');
+
+  if (!query) {
+    if (countEl) countEl.textContent = '';
+    searchState.xlsx = { marks: [], idx: -1 };
+    return;
+  }
+
+  const q = query.toLowerCase();
+  const matches = cells.filter(td => td.textContent.toLowerCase().includes(q));
+  matches.forEach(td => td.classList.add('search-hit-cell'));
+  searchState.xlsx = { marks: matches, idx: matches.length ? 0 : -1 };
+
+  if (countEl) countEl.textContent = matches.length ? `1/${matches.length}` : 'No matches';
+  if (matches.length) {
+    matches[0].classList.add('active');
+    matches[0].scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+  }
+}
+
+function xlsxSearchNav(dir) {
+  const st = searchState.xlsx;
+  if (!st || !st.marks.length) return;
+  st.marks[st.idx].classList.remove('active');
+  st.idx = (st.idx + dir + st.marks.length) % st.marks.length;
+  st.marks[st.idx].classList.add('active');
+  st.marks[st.idx].scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+  const countEl = document.getElementById('xlsx-search-count');
+  if (countEl) countEl.textContent = `${st.idx + 1}/${st.marks.length}`;
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
