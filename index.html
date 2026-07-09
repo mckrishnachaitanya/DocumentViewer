@@ -34,6 +34,7 @@
   --yellow:   #f7df1e;
   --orange:   #e44d26;
   --teal:     #14b8a6;
+  --pink:     #ff5fa8;
   --radius:   10px;
   --bar-h:    52px;
   --tab-h:    40px;
@@ -120,6 +121,7 @@ html, body {
 #type-strip.js    { background: #b8a800;        display: flex; } /* darkened yellow for white text */
 #type-strip.html  { background: var(--orange); display: flex; }
 #type-strip.md    { background: var(--teal);   display: flex; }
+#type-strip.yaml  { background: var(--pink);   display: flex; }
 
 /* ── Tab Bar ─────────────────────────────────────────────────────────────── */
 #tabbar {
@@ -165,6 +167,7 @@ html, body {
 .tab.active.js   { border-bottom-color: #b8a800; }
 .tab.active.html { border-bottom-color: var(--orange); }
 .tab.active.md   { border-bottom-color: var(--teal); }
+.tab.active.yaml { border-bottom-color: var(--pink); }
 #notes-tab.active { border-bottom-color: #a78bfa; }
 .tab-dot {
   width: 7px; height: 7px;
@@ -179,6 +182,7 @@ html, body {
 .tab-dot.js   { background: var(--yellow); }
 .tab-dot.html { background: var(--orange); }
 .tab-dot.md   { background: var(--teal); }
+.tab-dot.yaml { background: var(--pink); }
 .tab-name { overflow: hidden; text-overflow: ellipsis; }
 .tab-close {
   margin-left: 2px;
@@ -717,6 +721,7 @@ html, body {
 .format-pill.js   { background: rgba(247,223,30,0.15); color: #b8a800;      border: 1px solid rgba(247,223,30,0.4); }
 .format-pill.html { background: rgba(228,77,38,0.15);  color: var(--orange);border: 1px solid rgba(228,77,38,0.3); }
 .format-pill.md   { background: rgba(20,184,166,0.15); color: var(--teal);  border: 1px solid rgba(20,184,166,0.3); }
+.format-pill.yaml { background: rgba(255,95,168,0.15); color: var(--pink);  border: 1px solid rgba(255,95,168,0.3); }
 
 /* ── Code Viewer (JSON / JS / HTML) ─────────────────────────────────────── */
 #code-toolbar {
@@ -742,6 +747,7 @@ html, body {
 #code-lang-label.json { background: var(--amber); }
 #code-lang-label.js   { background: #b8a800; }
 #code-lang-label.html { background: var(--orange); }
+#code-lang-label.yaml { background: var(--pink); }
 
 #code-content-wrap {
   flex: 1;
@@ -1188,6 +1194,7 @@ mark.search-hit.active {
           <span class="format-pill js">JS</span>
           <span class="format-pill html">HTML</span>
           <span class="format-pill md">MD</span>
+          <span class="format-pill yaml">YML</span>
         </div>
       </div>
       <div id="recent-section">
@@ -1380,7 +1387,7 @@ mark.search-hit.active {
 </div>
 
 <!-- Hidden file input -->
-<input type="file" id="file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.json,.js,.html,.md" style="display:none" onchange="handleFileInput(this)"/>
+<input type="file" id="file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.json,.js,.html,.md,.yml,.yaml" style="display:none" onchange="handleFileInput(this)"/>
 
 <!-- Toast -->
 <div id="toast"></div>
@@ -1396,6 +1403,7 @@ const CDN = {
   hljsJson: 'https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/es/languages/json.min.js',
   hljsJs:   'https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/es/languages/javascript.min.js',
   hljsHtml: 'https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/es/languages/xml.min.js',
+  hljsYaml: 'https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/es/languages/yaml.min.js',
   hljsCss:  'https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-light.min.css',
   marked:   'https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js',
   dompurify:'https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js',
@@ -1582,7 +1590,7 @@ async function handleFile(file) {
   const name = file.name;
   const ext  = name.split('.').pop().toLowerCase();
 
-  if (!['pdf','doc','docx','xls','xlsx','txt','json','js','html','md'].includes(ext)) {
+  if (!['pdf','doc','docx','xls','xlsx','txt','json','js','html','md','yml','yaml'].includes(ext)) {
     showToast('Unsupported file type');
     return;
   }
@@ -1591,6 +1599,7 @@ async function handleFile(file) {
              : ['doc','docx'].includes(ext)     ? 'docx'
              : ['xls','xlsx'].includes(ext)     ? 'xlsx'
              : ext === 'md'                     ? 'md'
+             : ['yml','yaml'].includes(ext)     ? 'yaml'
              : ['json','js','html'].includes(ext)? ext
              : 'txt';
   const id  = Date.now().toString();
@@ -1735,7 +1744,7 @@ async function activateTab(id) {
   });
   resetContentSearches();
 
-  const panelType = ['json','js','html'].includes(tab.type) ? 'code' : tab.type;
+  const panelType = ['json','js','html','yaml'].includes(tab.type) ? 'code' : tab.type;
   document.getElementById(panelType + '-panel').classList.add('active');
   setTypeStrip(tab.type);
 
@@ -1748,7 +1757,7 @@ async function activateTab(id) {
   if (tab.type === 'xlsx') await loadXlsx(tab);
   if (tab.type === 'txt')  await loadTxt(tab);
   if (tab.type === 'md')   await loadMd(tab);
-  if (['json','js','html'].includes(tab.type)) await loadCode(tab);
+  if (['json','js','html','yaml'].includes(tab.type)) await loadCode(tab);
 }
 
 // ── Type Strip ────────────────────────────────────────────────────────────────
@@ -2335,7 +2344,7 @@ async function loadCode(tab) {
   // Set toolbar label + language-tinted accent border
   label.className = `code-lang-label ${tab.type}`;
   label.textContent = tab.type.toUpperCase();
-  const codeAccents = { json: 'var(--amber)', js: '#b8a800', html: 'var(--orange)' };
+  const codeAccents = { json: 'var(--amber)', js: '#b8a800', html: 'var(--orange)', yaml: 'var(--pink)' };
   document.getElementById('code-toolbar').style.borderTopColor = codeAccents[tab.type] || 'var(--amber)';
 
   const text = new TextDecoder('utf-8').decode(tab.buf);
@@ -2345,7 +2354,7 @@ async function loadCode(tab) {
   content.textContent = text;
   linenums.textContent = buildLineNumbers(text || '');
 
-  const langMap = { json: 'json', js: 'javascript', html: 'xml' };
+  const langMap = { json: 'json', js: 'javascript', html: 'xml', yaml: 'yaml' };
   try {
     // Load highlight.js + language grammars lazily (no theme CSS — we use our own dark theme)
     if (!hljsReady) {
@@ -2354,6 +2363,7 @@ async function loadCode(tab) {
         loadScript('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js'),
         loadScript('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js'),
         loadScript('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js'),
+        loadScript('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/yaml.min.js'),
       ]);
       hljsReady = true;
     }
@@ -2540,6 +2550,7 @@ const MIME_TYPES = {
   json: 'application/json',
   js:   'text/javascript',
   html: 'text/html',
+  yaml: 'application/x-yaml',
 };
 
 async function shareCurrentFile() {
