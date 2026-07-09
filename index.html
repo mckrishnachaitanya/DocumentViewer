@@ -504,15 +504,14 @@ html, body {
 
 #txt-content-wrap {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: var(--bg);
   display: flex;
   align-items: flex-start;
 }
 
 #txt-linenums {
-  position: sticky;
-  left: 0;
   flex-shrink: 0;
   background: var(--surface);
   color: var(--muted);
@@ -528,15 +527,23 @@ html, body {
 }
 
 #txt-content {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
   padding: 28px 20px;
   color: var(--text);
   font-family: 'JetBrains Mono', 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.75;
   white-space: pre;
-  overflow-wrap: normal;
-  word-break: normal;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
   user-select: text;
+  -webkit-user-select: text;
 }
 
 /* ── Notes Panel ─────────────────────────────────────────────────────────── */
@@ -751,15 +758,14 @@ html, body {
 
 #code-content-wrap {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: #1a1d2e;
   display: flex;
   align-items: flex-start;
 }
 
 #code-linenums {
-  position: sticky;
-  left: 0;
   flex-shrink: 0;
   background: #1a1d2e;
   color: #4a5164;
@@ -793,6 +799,27 @@ html, body {
   white-space: pre;
   overflow-wrap: normal;
   word-break: normal;
+}
+
+#code-edit-content {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 20px;
+  margin: 0;
+  color: #e0e4f0;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.75;
+  white-space: pre;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 /* ── Syntax token colors (dark theme, no CDN needed) ─────────────────────── */
@@ -872,7 +899,7 @@ mark.search-hit.active {
   flex-shrink: 0;
 }
 
-#md-view-toggle {
+#md-view-toggle, #code-edit-toggle {
   padding: 4px 12px;
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -884,7 +911,7 @@ mark.search-hit.active {
   white-space: nowrap;
   transition: background 0.12s, color 0.12s;
 }
-#md-view-toggle:hover { color: var(--text); background: var(--surface); }
+#md-view-toggle:hover, #code-edit-toggle:hover { color: var(--text); background: var(--surface); }
 
 #md-content-wrap {
   flex: 1;
@@ -941,20 +968,28 @@ mark.search-hit.active {
 
 #md-raw-wrap {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: var(--bg);
   display: none;
 }
 #md-raw {
+  width: 100%;
+  box-sizing: border-box;
   padding: 28px 20px;
   color: var(--text);
   font-family: 'JetBrains Mono', 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.75;
   white-space: pre;
-  overflow-wrap: normal;
-  word-break: normal;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
   user-select: text;
+  -webkit-user-select: text;
 }
 
 /* ── Recent Files ────────────────────────────────────────────────────────── */
@@ -1073,13 +1108,13 @@ mark.search-hit.active {
 }
 
 /* ── Press Feedback & Motion ─────────────────────────────────────────────── */
-.icon-btn, .tab, .note-tab, .sheet-tab, #md-view-toggle, .notes-font-btn,
+.icon-btn, .tab, .note-tab, .sheet-tab, #md-view-toggle, #code-edit-toggle, .notes-font-btn,
 #add-tab-btn, #notes-add-btn, #open-file-btn, .recent-item, #update-banner button {
   transition-property: background, color, opacity, transform;
   transition-duration: 0.15s;
 }
 .icon-btn:active { transform: scale(0.88); }
-.tab:active, .note-tab:active, .sheet-tab:active, #md-view-toggle:active,
+.tab:active, .note-tab:active, .sheet-tab:active, #md-view-toggle:active, #code-edit-toggle:active,
 .notes-font-btn:active, #add-tab-btn:active, #notes-add-btn:active,
 #update-banner button:active { transform: scale(0.94); }
 #open-file-btn:active, .recent-item:active { transform: scale(0.97); }
@@ -1094,7 +1129,7 @@ mark.search-hit.active {
   .pdf-page::before { animation: none; }
   .doc-panel.active { animation: none; }
   .icon-btn:active, .tab:active, .note-tab:active, .sheet-tab:active,
-  #md-view-toggle:active, .notes-font-btn:active, #add-tab-btn:active,
+  #md-view-toggle:active, #code-edit-toggle:active, .notes-font-btn:active, #add-tab-btn:active,
   #notes-add-btn:active, #open-file-btn:active, .recent-item:active,
   #update-banner button:active { transform: none; }
 }
@@ -1149,7 +1184,7 @@ mark.search-hit.active {
       </svg>
     </button>
 
-    <button class="icon-btn" id="save-btn" style="display:none" onclick="saveXlsx()" title="Save XLSX">
+    <button class="icon-btn" id="save-btn" style="display:none" onclick="handleSaveClick()" title="Save">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
       </svg>
@@ -1288,7 +1323,7 @@ mark.search-hit.active {
           </svg>
         </button>
         <input id="txt-search-box" class="content-search-box" type="search" placeholder="Search…"
-          oninput="runContentSearch('txt','txt-content','txt-search-count', this.value)"
+          oninput="runEditableSearch('txt','txt-content','txt-search-count', this.value)"
           onkeydown="if(event.key==='Enter'){event.preventDefault();searchNav('txt','txt-search-count',1);}"/>
         <span id="txt-search-count" class="search-count"></span>
         <button class="icon-btn search-nav-btn" onclick="searchNav('txt','txt-search-count',-1)" title="Previous match">‹</button>
@@ -1302,7 +1337,7 @@ mark.search-hit.active {
       </div>
       <div id="txt-content-wrap">
         <div id="txt-linenums"></div>
-        <div id="txt-content"></div>
+        <textarea id="txt-content" spellcheck="false"></textarea>
       </div>
     </div>
 
@@ -1310,14 +1345,15 @@ mark.search-hit.active {
     <div class="doc-panel" id="code-panel">
       <div id="code-toolbar">
         <span id="code-lang-label"></span>
+        <div id="code-edit-toggle" onclick="codeToggleEdit()" title="Edit this file">Edit</div>
         <div style="flex:1"></div>
-        <button class="icon-btn" onclick="copyViewerText('code-content')" title="Copy all code">
+        <button class="icon-btn" onclick="copyCodeContent()" title="Copy all code">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
           </svg>
         </button>
         <input id="code-search-box" class="content-search-box" type="search" placeholder="Search…"
-          oninput="runContentSearch('code','code-content','code-search-count', this.value)"
+          oninput="codeSearch(this.value)"
           onkeydown="if(event.key==='Enter'){event.preventDefault();searchNav('code','code-search-count',1);}"/>
         <span id="code-search-count" class="search-count"></span>
         <button class="icon-btn search-nav-btn" onclick="searchNav('code','code-search-count',-1)" title="Previous match">‹</button>
@@ -1331,7 +1367,8 @@ mark.search-hit.active {
       </div>
       <div id="code-content-wrap">
         <div id="code-linenums"></div>
-        <pre><code id="code-content"></code></pre>
+        <pre id="code-pre"><code id="code-content"></code></pre>
+        <textarea id="code-edit-content" spellcheck="false" style="display:none"></textarea>
       </div>
     </div>
 
@@ -1362,7 +1399,7 @@ mark.search-hit.active {
         <div id="md-content"></div>
       </div>
       <div id="md-raw-wrap">
-        <div id="md-raw"></div>
+        <textarea id="md-raw" spellcheck="false"></textarea>
       </div>
     </div>
 
@@ -1639,6 +1676,7 @@ function renderTabs() {
 }
 
 function closeTab(id) {
+  flushPendingEdits();
   const idx = tabs.findIndex(t => t.id === id);
   const tab = tabs[idx];
   tabs.splice(idx, 1);
@@ -1732,6 +1770,7 @@ function showEmpty() {
 }
 
 async function activateTab(id) {
+  flushPendingEdits();
   activeTab = id;
   const tab = tabs.find(t => t.id === id);
   if (!tab) return;
@@ -1748,7 +1787,10 @@ async function activateTab(id) {
   document.getElementById(panelType + '-panel').classList.add('active');
   setTypeStrip(tab.type);
 
-  document.getElementById('save-btn').style.display = tab.type === 'xlsx' ? 'flex' : 'none';
+  const SAVEABLE_TYPES = ['xlsx', 'txt', 'json', 'js', 'html', 'yaml', 'md'];
+  const saveBtn = document.getElementById('save-btn');
+  saveBtn.style.display = SAVEABLE_TYPES.includes(tab.type) ? 'flex' : 'none';
+  saveBtn.title = tab.type === 'xlsx' ? 'Save XLSX' : 'Save a copy';
   document.getElementById('share-btn').style.display = 'flex';
   document.getElementById('pdf-topbar-controls').style.display = tab.type === 'pdf' ? 'flex' : 'none';
 
@@ -1935,6 +1977,7 @@ function deleteNote(id) {
 }
 
 function activateNotes() {
+  flushPendingEdits();
   activeTab = null;
   ['pdf','docx','xlsx','txt','code','md','notes'].forEach(t => {
     document.getElementById(t + '-panel').classList.remove('active');
@@ -1970,6 +2013,39 @@ document.getElementById('notes-textarea').addEventListener('input', () => {
   }
   updateNotesStats();
 });
+
+// ── Editable document viewers (TXT / Code edit mode / MD raw) ───────────────
+// These persist into the active tab's own buffer + IndexedDB, debounced so
+// typing doesn't hammer storage on every keystroke.
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+let pendingEditTimer;
+let pendingEditFlush = null;
+
+function scheduleEditPersist(getValue) {
+  clearTimeout(pendingEditTimer);
+  pendingEditFlush = () => persistActiveTabEdit(getValue());
+  pendingEditTimer = setTimeout(() => {
+    if (pendingEditFlush) { pendingEditFlush(); pendingEditFlush = null; }
+  }, 500);
+}
+
+function flushPendingEdits() {
+  clearTimeout(pendingEditTimer);
+  if (pendingEditFlush) { pendingEditFlush(); pendingEditFlush = null; }
+}
+
+function persistActiveTabEdit(text) {
+  const tab = tabs.find(t => t.id === activeTab);
+  if (!tab) return;
+  tab.buf = new TextEncoder().encode(text).buffer;
+  if (db) dbSave(tab, false).catch(console.warn);
+}
+
+document.addEventListener('visibilitychange', () => { if (document.hidden) flushPendingEdits(); });
 
 // ── Notes stats & export ─────────────────────────────────────────────────────
 function countStats(text) {
@@ -2310,19 +2386,34 @@ async function loadDocx(tab) {
 async function loadTxt(tab) {
   const content   = document.getElementById('txt-content');
   const linenums  = document.getElementById('txt-linenums');
-  content.textContent  = '';
+  content.value  = '';
   linenums.textContent = '';
   try {
     const text = new TextDecoder('utf-8').decode(tab.buf);
-    content.textContent = text || '(Empty file)';
+    content.value = text;
+    content.placeholder = '(Empty file)';
     linenums.textContent = buildLineNumbers(text || '');
+    autoGrow(content);
     const s = countStats(text);
     document.getElementById('txt-stats').textContent = `${s.lines} L · ${s.words} W · ${s.chars} C`;
   } catch(e) {
-    content.textContent = `Failed to load file: ${e.message}`;
+    content.value = '';
+    content.placeholder = `Failed to load file: ${e.message}`;
     document.getElementById('txt-stats').textContent = '';
   }
 }
+
+// Edit support: typing updates the gutter/stats immediately and persists
+// (debounced) into the active tab's buffer.
+document.getElementById('txt-content').addEventListener('input', () => {
+  const ta = document.getElementById('txt-content');
+  document.getElementById('txt-linenums').textContent = buildLineNumbers(ta.value || '');
+  autoGrow(ta);
+  const s = countStats(ta.value);
+  const statsEl = document.getElementById('txt-stats');
+  if (statsEl) statsEl.textContent = `${s.lines} L · ${s.words} W · ${s.chars} C`;
+  scheduleEditPersist(() => ta.value);
+});
 
 function buildLineNumbers(text) {
   const lineCount = (text.match(/\n/g) || []).length + 1;
@@ -2333,13 +2424,21 @@ function buildLineNumbers(text) {
 
 // ── CODE (JSON / JS / HTML) ───────────────────────────────────────────────────
 let hljsReady = false;
+let codeEditMode = false;
 
 async function loadCode(tab) {
   const content  = document.getElementById('code-content');
   const label    = document.getElementById('code-lang-label');
   const linenums = document.getElementById('code-linenums');
+  const editEl   = document.getElementById('code-edit-content');
   content.textContent  = '';
   linenums.textContent = '';
+
+  // Always start a freshly opened/switched code tab in read (View) mode
+  codeEditMode = false;
+  document.getElementById('code-pre').style.display = '';
+  editEl.style.display = 'none';
+  document.getElementById('code-edit-toggle').textContent = 'Edit';
 
   // Set toolbar label + language-tinted accent border
   label.className = `code-lang-label ${tab.type}`;
@@ -2352,6 +2451,7 @@ async function loadCode(tab) {
   // Plain text + line numbers are set immediately so they always show,
   // even if syntax highlighting fails to load below.
   content.textContent = text;
+  editEl.value = text;
   linenums.textContent = buildLineNumbers(text || '');
 
   const langMap = { json: 'json', js: 'javascript', html: 'xml', yaml: 'yaml' };
@@ -2375,6 +2475,61 @@ async function loadCode(tab) {
   }
 }
 
+// ── Code edit mode ────────────────────────────────────────────────────────────
+function codeToggleEdit() {
+  const pre   = document.getElementById('code-pre');
+  const editEl = document.getElementById('code-edit-content');
+  const btn   = document.getElementById('code-edit-toggle');
+  const tab   = tabs.find(t => t.id === activeTab);
+  if (!tab) return;
+
+  codeEditMode = !codeEditMode;
+
+  // Leaving edit mode: clear any editable-search state tied to the edit textarea
+  const clearSearch = () => {
+    const input = document.getElementById('code-search-box');
+    if (input) input.value = '';
+    const countEl = document.getElementById('code-search-count');
+    if (countEl) countEl.textContent = '';
+    clearHighlights(document.getElementById('code-content'));
+    searchState.code = { marks: [], idx: -1 };
+  };
+
+  if (codeEditMode) {
+    editEl.value = document.getElementById('code-content').textContent;
+    pre.style.display = 'none';
+    editEl.style.display = 'block';
+    autoGrow(editEl);
+    btn.textContent = 'View';
+    clearSearch();
+    editEl.focus();
+  } else {
+    flushPendingEdits();
+    clearSearch();
+    // Re-decode from the (just-persisted) buffer and re-apply syntax highlighting
+    loadCode(tab);
+  }
+}
+
+function copyCodeContent() {
+  copyViewerText(codeEditMode ? 'code-edit-content' : 'code-content');
+}
+
+function codeSearch(query) {
+  if (codeEditMode) {
+    runEditableSearch('code', 'code-edit-content', 'code-search-count', query);
+  } else {
+    runContentSearch('code', 'code-content', 'code-search-count', query);
+  }
+}
+
+document.getElementById('code-edit-content').addEventListener('input', () => {
+  const editEl = document.getElementById('code-edit-content');
+  document.getElementById('code-linenums').textContent = buildLineNumbers(editEl.value || '');
+  autoGrow(editEl);
+  scheduleEditPersist(() => editEl.value);
+});
+
 // ── MARKDOWN ──────────────────────────────────────────────────────────────────
 let mdView = 'rendered';
 
@@ -2382,11 +2537,11 @@ async function loadMd(tab) {
   const content = document.getElementById('md-content');
   const rawEl   = document.getElementById('md-raw');
   content.innerHTML = '<div class="spinner"></div>';
-  rawEl.textContent = '';
+  rawEl.value = '';
   mdSetView('rendered');
 
   const text = new TextDecoder('utf-8').decode(tab.buf);
-  rawEl.textContent = text; // raw view always available, even if CDN fails
+  rawEl.value = text; // raw view always available, even if CDN fails
 
   try {
     await loadScript(CDN.marked);
@@ -2405,6 +2560,7 @@ function mdSetView(view) {
   document.getElementById('md-content-wrap').style.display = view === 'rendered' ? 'flex' : 'none';
   document.getElementById('md-raw-wrap').style.display     = view === 'raw'      ? 'flex' : 'none';
   document.getElementById('md-view-toggle').textContent    = view === 'rendered' ? 'Raw' : 'Rendered';
+  if (view === 'raw') autoGrow(document.getElementById('md-raw'));
 }
 
 function mdToggleView() {
@@ -2414,15 +2570,39 @@ function mdToggleView() {
   const countEl = document.getElementById('md-search-count');
   if (countEl) countEl.textContent = '';
   clearHighlights(document.getElementById('md-content'));
-  clearHighlights(document.getElementById('md-raw'));
   searchState.md = { marks: [], idx: -1 };
+
+  const leavingRaw = mdView === 'raw';
+  if (leavingRaw) {
+    // Persist any pending edit, then re-render the rendered view from the
+    // latest (possibly edited) raw source
+    flushPendingEdits();
+    const rawText = document.getElementById('md-raw').value;
+    const contentEl = document.getElementById('md-content');
+    try {
+      if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
+        contentEl.innerHTML = DOMPurify.sanitize(marked.parse(rawText)) || '<p style="color:#888">Empty document.</p>';
+      }
+    } catch(e) {
+      console.warn('Markdown re-render failed:', e);
+    }
+  }
   mdSetView(mdView === 'rendered' ? 'raw' : 'rendered');
 }
 
 function mdSearch(query) {
-  const target = mdView === 'rendered' ? 'md-content' : 'md-raw';
-  runContentSearch('md', target, 'md-search-count', query);
+  if (mdView === 'raw') {
+    runEditableSearch('md', 'md-raw', 'md-search-count', query);
+  } else {
+    runContentSearch('md', 'md-content', 'md-search-count', query);
+  }
 }
+
+document.getElementById('md-raw').addEventListener('input', () => {
+  const rawEl = document.getElementById('md-raw');
+  autoGrow(rawEl);
+  scheduleEditPersist(() => rawEl.value);
+});
 
 // ── XLSX ──────────────────────────────────────────────────────────────────────
 async function loadXlsx(tab) {
@@ -2535,8 +2715,33 @@ async function saveXlsx() {
   showToast('Saved');
 }
 
+// ── Save (dispatches by file type) ───────────────────────────────────────────
+function handleSaveClick() {
+  const tab = tabs.find(t => t.id === activeTab);
+  if (!tab) { showToast('No file open'); return; }
+  if (tab.type === 'xlsx') { saveXlsx(); return; }
+  downloadCurrentFile();
+}
+
+// Quick one-tap download of the current (possibly edited) file — distinct
+// from Share, which opens the full Android share sheet for sending elsewhere.
+function downloadCurrentFile() {
+  flushPendingEdits();
+  const tab = tabs.find(t => t.id === activeTab);
+  if (!tab) { showToast('No file open'); return; }
+  const mime = MIME_TYPES[tab.type] || 'application/octet-stream';
+  const url  = URL.createObjectURL(new Blob([tab.buf], { type: mime }));
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = tab.name;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Saved a copy');
+}
+
 // ── Print ─────────────────────────────────────────────────────────────────────
 function triggerPrint() {
+  flushPendingEdits();
   window.print();
 }
 
@@ -2554,6 +2759,7 @@ const MIME_TYPES = {
 };
 
 async function shareCurrentFile() {
+  flushPendingEdits();
   const tab = tabs.find(t => t.id === activeTab);
   if (!tab) { showToast('No file open'); return; }
   const mime = MIME_TYPES[tab.type] || 'application/octet-stream';
@@ -2580,7 +2786,10 @@ async function shareCurrentFile() {
 // ── Copy viewer content ───────────────────────────────────────────────────────
 async function copyViewerText(containerId) {
   const el = document.getElementById(containerId);
-  const text = el ? (el.innerText || el.textContent || '') : '';
+  let text = '';
+  if (el) {
+    text = (el.tagName === 'TEXTAREA') ? el.value : (el.innerText || el.textContent || '');
+  }
   if (!text) { showToast('Nothing to copy'); return; }
   try {
     await navigator.clipboard.writeText(text);
@@ -2654,9 +2863,54 @@ function focusMatch(panelKey) {
   m.scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
 
+// ── Editable-view search (TXT / Code edit mode / MD raw) ─────────────────────
+// A <textarea>'s content can't host <mark> elements, so instead of DOM
+// highlighting we track match offsets and navigate via native text selection.
+function runEditableSearch(panelKey, textareaId, countElId, query) {
+  const ta = document.getElementById(textareaId);
+  const text = ta ? ta.value : '';
+  const offsets = [];
+  if (query) {
+    const re = new RegExp(escapeRegex(query), 'gi');
+    let m;
+    while ((m = re.exec(text))) {
+      offsets.push({ start: m.index, end: m.index + m[0].length });
+      if (m.index === re.lastIndex) re.lastIndex++;
+    }
+  }
+  searchState[panelKey] = { editable: true, textareaId, offsets, idx: offsets.length ? 0 : -1 };
+  const countEl = document.getElementById(countElId);
+  if (countEl) countEl.textContent = !query ? '' : (offsets.length ? `1/${offsets.length}` : 'No matches');
+  if (offsets.length) focusEditableMatch(panelKey);
+}
+
+function focusEditableMatch(panelKey) {
+  const st = searchState[panelKey];
+  if (!st || !st.editable || st.idx < 0) return;
+  const ta = document.getElementById(st.textareaId);
+  if (!ta) return;
+  const { start, end } = st.offsets[st.idx];
+  ta.focus();
+  ta.setSelectionRange(start, end);
+  // Approximate scroll position: line number of the match, roughly centered
+  const before = ta.value.slice(0, start);
+  const lineNum = (before.match(/\n/g) || []).length;
+  const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 22;
+  ta.scrollTop = Math.max(0, lineNum * lineHeight - ta.clientHeight / 2);
+}
+
 function searchNav(panelKey, countElId, dir) {
   const st = searchState[panelKey];
-  if (!st || !st.marks.length) return;
+  if (!st) return;
+  if (st.editable) {
+    if (!st.offsets || !st.offsets.length) return;
+    st.idx = (st.idx + dir + st.offsets.length) % st.offsets.length;
+    focusEditableMatch(panelKey);
+    const countEl = document.getElementById(countElId);
+    if (countEl) countEl.textContent = `${st.idx + 1}/${st.offsets.length}`;
+    return;
+  }
+  if (!st.marks || !st.marks.length) return;
   st.idx = (st.idx + dir + st.marks.length) % st.marks.length;
   focusMatch(panelKey);
   const countEl = document.getElementById(countElId);
