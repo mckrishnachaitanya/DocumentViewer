@@ -12,9 +12,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
 
-<!-- PDF.js -->
-<script src="https://mozilla.github.io/pdf.js/build/pdf.mjs" type="module"></script>
-
 <style>
 /* ── Reset & Base ────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -2100,11 +2097,17 @@ function applyNotesFontSize() {
 // ── PDF ───────────────────────────────────────────────────────────────────────
 let pdfjsLib = null;
 
+// Pinned to an exact pdfjs-dist release (not a rolling "latest"/nightly
+// build) so the main-thread library and its worker can never drift out of
+// version sync — a mismatch between the two is pdf.js's #1 runtime failure
+// mode. Bump this string deliberately if you ever want a newer release.
+const PDFJS_VERSION = '4.0.379';
+
 async function getPdfjsLib() {
   if (pdfjsLib) return pdfjsLib;
   // PDF.js via ESM dynamic import
-  pdfjsLib = await import('https://mozilla.github.io/pdf.js/build/pdf.mjs');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.mjs';
+  pdfjsLib = await import(`https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/build/pdf.min.mjs`);
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/build/pdf.worker.min.mjs`;
   return pdfjsLib;
 }
 
